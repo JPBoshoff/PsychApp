@@ -30,6 +30,6 @@ type MockAnalyzer struct{}
 
 func NewMockAnalyzer() *MockAnalyzer { return &MockAnalyzer{} }
 
-func (a *MockAnalyzer) Analyze(ctx context.Context, text string, source string, metadata map[string]string) (map[string]any, error) {
+func (a *MockAnalyzer) Analyze(ctx context.Context, requestID string, entryID string, createdAt string, text string, source string, metadata map[string]string) (map[string]any, error) {
 	return MockAnalyze(text), nil
 }

@@ -11,6 +11,10 @@ class AnalyzeRequest(BaseModel):
     source: Optional[str] = None
     metadata: Optional[Dict[str, str]] = None
 
+    # Optional - provided by upstream (Go API) for traceability
+    entry_id: Optional[str] = None
+    created_at: Optional[str] = None
+
 
 class MirrorReflection(BaseModel):
     summary: str
@@ -28,6 +32,8 @@ class AnalyzeResponse(BaseModel):
     created_at: str
     analysis: Dict[str, Any]
     mock_notice: str = "mock analysis - python agent scaffold (dev only)"
+    request_id: str | None = None
+
 
     @staticmethod
     def now_iso() -> str:

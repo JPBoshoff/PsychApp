@@ -58,21 +58,32 @@ func (s *Server) CreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now().UTC()
 	entryID := "entry_" + now.Format("20060102_150405.000")
+	createdAt := now.Format(time.RFC3339)
 
-	analysis, err := s.analyzer.Analyze(r.Context(), req.Text, req.Source, req.Metadata)
+	reqID := middleware.GetReqID(r.Context())
+
+	analysis, err := s.analyzer.Analyze(
+		r.Context(),
+		reqID,
+		entryID,
+		createdAt,
+		req.Text,
+		req.Source,
+		req.Metadata,
+	)
 	if err != nil {
 		http.Error(w, "agent error", http.StatusBadGateway)
 		return
 	}
 
 	_, _ = s.repo.Create(r.Context(), StoredEntry{
-	EntryID:   entryID,
-	CreatedAt: now,
-	Text:      req.Text,
-	Source:    req.Source,
-	Metadata:  req.Metadata,
-	Analysis:  analysis,
-})
+		EntryID:   entryID,
+		CreatedAt: now,
+		Text:      req.Text,
+		Source:    req.Source,
+		Metadata:  req.Metadata,
+		Analysis:  analysis,
+	})
 
 
 	resp := CreateEntryResponse{

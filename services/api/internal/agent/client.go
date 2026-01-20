@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+const HeaderRequestID = "X-Request-Id"
 type Client struct {
 	baseURL string
 	http    *http.Client
@@ -24,10 +25,13 @@ func NewClient(baseURL string) *Client {
 }
 
 type AnalyzeRequest struct {
-	Text     string            `json:"text"`
-	Source   string            `json:"source,omitempty"`
-	Metadata map[string]string `json:"metadata,omitempty"`
+	Text      string            `json:"text"`
+	Source    string            `json:"source,omitempty"`
+	Metadata  map[string]string `json:"metadata,omitempty"`
+	EntryID   string            `json:"entry_id,omitempty"`
+	CreatedAt string            `json:"created_at,omitempty"`
 }
+
 
 type AnalyzeResponse struct {
 	EntryID    string                 `json:"entry_id"`
@@ -36,7 +40,7 @@ type AnalyzeResponse struct {
 	MockNotice string                 `json:"mock_notice,omitempty"`
 }
 
-func (c *Client) Analyze(ctx context.Context, req AnalyzeRequest) (AnalyzeResponse, error) {
+func (c *Client) Analyze(ctx context.Context, requestID string, req AnalyzeRequest) (AnalyzeResponse, error) {
 	body, err := json.Marshal(req)
 	if err != nil {
 		return AnalyzeResponse{}, err
@@ -47,6 +51,9 @@ func (c *Client) Analyze(ctx context.Context, req AnalyzeRequest) (AnalyzeRespon
 		return AnalyzeResponse{}, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+	if requestID != "" {
+		httpReq.Header.Set(HeaderRequestID, requestID)
+	}
 
 	resp, err := c.http.Do(httpReq)
 	if err != nil {
