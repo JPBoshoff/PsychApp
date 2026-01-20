@@ -114,3 +114,60 @@ LIMIT 1
 	out.CreatedAt = out.CreatedAt.UTC()
 	return out, true, nil
 }
+
+func (r *PostgresRepository) ListRecent(ctx context.Context, limit int) ([]StoredEntry, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	const q = `
+SELECT entry_id, created_at, text, source, metadata, analysis
+FROM entries
+ORDER BY created_at DESC
+LIMIT $1
+`
+
+	rows, err := r.pool.Query(ctx, q, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]StoredEntry, 0, limit)
+
+	for rows.Next() {
+		var e StoredEntry
+		var metadataBytes []byte
+		var analysisBytes []byte
+
+		if err := rows.Scan(
+			&e.EntryID,
+			&e.CreatedAt,
+			&e.Text,
+			&e.Source,
+			&metadataBytes,
+			&analysisBytes,
+		); err != nil {
+			return nil, err
+		}
+
+		if len(metadataBytes) > 0 {
+			_ = json.Unmarshal(metadataBytes, &e.Metadata)
+		}
+		if len(analysisBytes) > 0 {
+			_ = json.Unmarshal(analysisBytes, &e.Analysis)
+		}
+
+		e.CreatedAt = e.CreatedAt.UTC()
+		out = append(out, e)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}

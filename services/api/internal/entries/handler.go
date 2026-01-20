@@ -3,6 +3,7 @@ package entries
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -31,6 +32,18 @@ type GetEntryResponse struct {
 	Source    string         `json:"source,omitempty"`
 	Metadata  map[string]string `json:"metadata,omitempty"`
 	Analysis  map[string]any `json:"analysis"`
+}
+
+type EntryListItem struct {
+	EntryID   string   `json:"entry_id"`
+	CreatedAt string   `json:"created_at"`
+	Source    string   `json:"source,omitempty"`
+	Excerpt   string   `json:"excerpt"`
+	Themes    []string `json:"themes,omitempty"`
+}
+
+type ListEntriesResponse struct {
+	Items []EntryListItem `json:"items"`
 }
 
 type Server struct {
@@ -124,6 +137,67 @@ func (s *Server) GetHandler(w http.ResponseWriter, r *http.Request) {
 		Metadata:  e.Metadata,
 		Analysis:  e.Analysis,
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func makeExcerpt(s string, max int) string {
+	if max <= 0 {
+		max = 140
+	}
+	r := []rune(s)
+	if len(r) <= max {
+		return s
+	}
+	return string(r[:max]) + "..."
+}
+
+func (s *Server) ListHandler(w http.ResponseWriter, r *http.Request) {
+	limit := 50
+	if v := r.URL.Query().Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			limit = n
+		}
+	}
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	entries, err := s.repo.ListRecent(r.Context(), limit)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	items := make([]EntryListItem, 0, len(entries))
+	for _, e := range entries {
+		// Try pull themes from analysis if available
+		themes := []string{}
+		if raw, ok := e.Analysis["themes"]; ok {
+			// themes is expected to be []any when unmarshaled
+			if arr, ok := raw.([]any); ok {
+				for _, t := range arr {
+					if s, ok := t.(string); ok {
+						themes = append(themes, s)
+					}
+				}
+			}
+		}
+
+		items = append(items, EntryListItem{
+			EntryID:   e.EntryID,
+			CreatedAt: e.CreatedAt.UTC().Format(time.RFC3339),
+			Source:    e.Source,
+			Excerpt:   makeExcerpt(e.Text, 140),
+			Themes:    themes,
+		})
+	}
+
+	resp := ListEntriesResponse{Items: items}
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)

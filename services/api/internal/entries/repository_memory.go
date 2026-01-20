@@ -2,6 +2,7 @@ package entries
 
 import (
 	"context"
+	"sort"
 	"sync"
 )
 
@@ -30,4 +31,27 @@ func (r *MemoryRepository) GetByID(ctx context.Context, id string) (StoredEntry,
 
 	e, ok := r.data[id]
 	return e, ok, nil
+}
+
+func (r *MemoryRepository) ListRecent(ctx context.Context, limit int) ([]StoredEntry, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	out := make([]StoredEntry, 0, len(r.data))
+	for _, e := range r.data {
+		out = append(out, e)
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].CreatedAt.After(out[j].CreatedAt)
+	})
+
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > len(out) {
+		limit = len(out)
+	}
+
+	return out[:limit], nil
 }

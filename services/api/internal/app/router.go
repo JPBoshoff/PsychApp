@@ -22,6 +22,7 @@ func NewRouter(entryRepo entries.EntryRepository, analyzer entries.Analyzer) htt
 
 	r.Get("/health", health.Handler)
 	r.Post("/entries", entryServer.CreateHandler)
+	r.Get("/entries", entryServer.ListHandler)
 	r.Get("/entries/{entry_id}", entryServer.GetHandler)
 
 	return r
