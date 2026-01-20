@@ -1,6 +1,7 @@
 "use client";
 
 import { createEntry } from "@/lib/api";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -38,6 +39,15 @@ export default function Page() {
           Write a short entry. You will receive a reflection and AQAL-style
           tags.
         </p>
+
+        <div className="mt-3">
+          <Link
+            href="/timeline"
+            className="text-sm text-cyan-400 hover:text-cyan-300"
+          >
+            View timeline →
+          </Link>
+        </div>
 
         <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow">
           <label className="block text-sm text-slate-300">Entry type</label>

@@ -74,3 +74,31 @@ export async function getEntry(entryId: string): Promise<GetEntryResponse> {
 
   return res.json();
 }
+
+export type EntryListItem = {
+  entry_id: string;
+  created_at: string;
+  source?: string;
+  excerpt: string;
+  themes?: string[];
+};
+
+export type ListEntriesResponse = {
+  items: EntryListItem[];
+};
+
+export async function listEntries(limit = 50): Promise<ListEntriesResponse> {
+  const res = await fetch(
+    `${assertBaseUrl()}/entries?limit=${encodeURIComponent(String(limit))}`,
+    {
+      method: "GET",
+    },
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`List entries failed: ${res.status} ${text}`);
+  }
+
+  return res.json();
+}
