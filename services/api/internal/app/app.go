@@ -8,6 +8,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/JPBoshoff/PsychApp/services/api/internal/config"
+	"github.com/JPBoshoff/PsychApp/services/api/internal/entries"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type App struct {
@@ -17,9 +20,28 @@ type App struct {
 }
 
 func New(cfg config.Config, logger *zap.Logger) *App {
+	var entryRepo entries.EntryRepository
+
+	if cfg.RepoDriver == "postgres" {
+		pool, err := pgxpool.New(context.Background(), cfg.PostgresDSN)
+		if err != nil {
+			logger.Fatal("failed to create postgres pool", zap.Error(err))
+		}
+		// Optionally ping
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		if err := pool.Ping(ctx); err != nil {
+			logger.Fatal("failed to ping postgres", zap.Error(err))
+		}
+
+		entryRepo = entries.NewPostgresRepository(pool)
+	} else {
+		entryRepo = entries.NewMemoryRepository()
+	}
+
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           NewRouter(),
+		Handler:           NewRouter(entryRepo),
 		ReadHeaderTimeout: cfg.ReadTimeout,
 	}
 

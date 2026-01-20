@@ -10,12 +10,17 @@ type Config struct {
 	Env         string        `mapstructure:"ENV"`
 	HTTPAddr    string        `mapstructure:"HTTP_ADDR"`
 	ReadTimeout time.Duration `mapstructure:"READ_TIMEOUT"`
+	RepoDriver  string        `mapstructure:"REPO_DRIVER"`
+	PostgresDSN string `mapstructure:"POSTGRES_DSN"`
 }
 
 func Load() (Config, error) {
 	viper.SetDefault("ENV", "dev")
 	viper.SetDefault("HTTP_ADDR", ":8080")
 	viper.SetDefault("READ_TIMEOUT", 10*time.Second)
+	viper.SetDefault("REPO_DRIVER", "memory")
+	viper.SetDefault("POSTGRES_DSN", "postgres://postgres:postgres@localhost:5432/psychapp?sslmode=disable")
+
 
 	viper.AutomaticEnv()
 
