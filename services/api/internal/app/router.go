@@ -7,6 +7,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/JPBoshoff/PsychApp/services/api/internal/health"
+	"github.com/JPBoshoff/PsychApp/services/api/internal/entries"
+
 )
 
 func NewRouter() http.Handler {
@@ -20,6 +22,7 @@ func NewRouter() http.Handler {
 
 	// Routes
 	r.Get("/health", health.Handler)
+	r.Post("/entries", entries.CreateHandler)
 
 	return r
 }
