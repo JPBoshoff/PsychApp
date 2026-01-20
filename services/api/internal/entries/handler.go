@@ -33,14 +33,12 @@ type GetEntryResponse struct {
 	Analysis  map[string]any `json:"analysis"`
 }
 
-// Server holds dependencies for entry handlers.
-// Later, this becomes an interface-backed repo (Postgres).
 type Server struct {
-	store *InMemoryStore
+	repo EntryRepository
 }
 
-func NewServer(store *InMemoryStore) *Server {
-	return &Server{store: store}
+func NewServer(repo EntryRepository) *Server {
+	return &Server{repo: repo}
 }
 
 func (s *Server) CreateHandler(w http.ResponseWriter, r *http.Request) {
@@ -82,15 +80,15 @@ func (s *Server) CreateHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	// Store (dev-only)
-	s.store.Put(StoredEntry{
-		EntryID:   entryID,
-		CreatedAt: now,
-		Text:      req.Text,
-		Source:    req.Source,
-		Metadata:  req.Metadata,
-		Analysis:  analysis,
-	})
+	_, _ = s.repo.Create(r.Context(), StoredEntry{
+	EntryID:   entryID,
+	CreatedAt: now,
+	Text:      req.Text,
+	Source:    req.Source,
+	Metadata:  req.Metadata,
+	Analysis:  analysis,
+})
+
 
 	resp := CreateEntryResponse{
 		EntryID:    entryID,
@@ -112,7 +110,11 @@ func (s *Server) GetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	e, ok := s.store.Get(id)
+	e, ok, err := s.repo.GetByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
 	if !ok {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
