@@ -10,7 +10,7 @@ import (
 	"github.com/JPBoshoff/PsychApp/services/api/internal/health"
 )
 
-func NewRouter(entryRepo entries.EntryRepository) http.Handler {
+func NewRouter(entryRepo entries.EntryRepository, analyzer entries.Analyzer) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -18,7 +18,7 @@ func NewRouter(entryRepo entries.EntryRepository) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 
-	entryServer := entries.NewServer(entryRepo)
+	entryServer := entries.NewServer(entryRepo, analyzer)
 
 	r.Get("/health", health.Handler)
 	r.Post("/entries", entryServer.CreateHandler)

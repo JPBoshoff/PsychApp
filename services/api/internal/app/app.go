@@ -7,6 +7,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/JPBoshoff/PsychApp/services/api/internal/agent"
 	"github.com/JPBoshoff/PsychApp/services/api/internal/config"
 	"github.com/JPBoshoff/PsychApp/services/api/internal/entries"
 
@@ -21,6 +22,14 @@ type App struct {
 
 func New(cfg config.Config, logger *zap.Logger) *App {
 	var entryRepo entries.EntryRepository
+	var analyzer entries.Analyzer
+
+	if cfg.AgentDriver == "python" {
+		agentClient := agent.NewClient(cfg.AgentURL)
+		analyzer = entries.NewPythonAnalyzer(agentClient)
+	} else {
+		analyzer = entries.NewMockAnalyzer()
+	}
 
 	if cfg.RepoDriver == "postgres" {
 		pool, err := pgxpool.New(context.Background(), cfg.PostgresDSN)
@@ -41,7 +50,7 @@ func New(cfg config.Config, logger *zap.Logger) *App {
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           NewRouter(entryRepo),
+		Handler:           NewRouter(entryRepo, analyzer),
 		ReadHeaderTimeout: cfg.ReadTimeout,
 	}
 

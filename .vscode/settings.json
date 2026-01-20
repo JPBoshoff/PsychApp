@@ -8,5 +8,9 @@
   },
   "files.exclude": {
     "**/.DS_Store": true
+  },
+  "files.associations": {
+    "go.mod": "go.mod",
+    "go.sum": "go.sum"
   }
 }
